@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Hello Kitty UP — Torre Kawaii</title>
+<style>
+  :root{
+    --rosa-fondo1: #ffe3ef;
+    --rosa-fondo2: #ffd0e6;
+    --rosa-torre: #ffb6d5;
+    --rosa-torre-oscuro: #ff8fc2;
+    --rojo-moño: #ff4d78;
+    --blanco: #ffffff;
+    --texto: #7a3b56;
+    --dorado: #ffd76a;
+    --verde-sube: #5cd68a;
+    --rojo-baja: #ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(180deg, #fff5fa 0%, var(--rosa-fondo1) 40%, var(--rosa-fondo2) 100%);
+    color: var(--texto);
+    -webkit-user-select:none; user-select:none;
+  }
+  #stage{
+    position:relative; width:100%; height:100vh; overflow:hidden;
+  }
+
+  /* ---- Fondo: nubes / corazones / fresas flotando ---- */
+  .bg-item{
+    position:absolute; opacity:.85; pointer-events:none; user-select:none;
+    filter: drop-shadow(0 4px 6px rgba(255,150,190,.25));
+  }
+  @keyframes flotar {
+    0%   { transform: translateY(0) translateX(0) rotate(0deg); }
+    50%  { transform: translateY(-14px) translateX(8px) rotate(4deg); }
+    100% { transform: translateY(0) translateX(0) rotate(0deg); }
+  }
+  .bg-item{ animation: flotar 6s ease-in-out infinite; }
+
+  /* ---- Marcador superior ---- */
+  #marcador{
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    z-index:30; text-align:center;
+    background: rgba(255,255,255,.75);
+    backdrop-filter: blur(6px);
+    border: 3px solid var(--blanco);
+    border-radius: 30px;
+    padding: 8px 26px;
+    box-shadow: 0 6px 18px rgba(255,120,170,.25);
+  }
+  #marcador .num{
+    font-size: 26px; font-weight: 800; color: var(--rojo-moño);
+    letter-spacing: .5px;
+  }
+  #marcador .sub{ font-size: 13px; color: var(--texto); opacity:.7; }
+
+  /* ---- Barra de progreso lateral ---- */
+  #barra-wrap{
+    position:absolute; right: 14px; top: 90px; bottom: 90px;
+    width: 16px; z-index: 25;
+    background: rgba(255,255,255,.55);
+    border-radius: 10px;
+    border: 2px solid #fff;
+  }
+  #barra-fill{
+    position:absolute; bottom:0; left:0; width:100%;
+    background: linear-gradient(180deg, #ffd6e8, var(--rojo-moño));
+    border-radius: 10px;
+    transition: height .6s cubic-bezier(.2,.9,.3,1.2);
+    height: 0%;
+  }
+
+  /* ---- La torre en espiral ---- */
+  #torre-viewport{
+    position:absolute; inset:0; z-index:5;
+    display:flex; justify-content:center;
+  }
+  #torre{
+    position:absolute; bottom:-200px; width: 240px; height: 5200px;
+    left:50%; margin-left:-120px;
+    transition: transform 1s cubic-bezier(.2,.9,.25,1.1);
+  }
+  .peldano{
+    position:absolute; width:220px; height:70px;
+    left:50%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 30% 30%, #fff 0%, var(--rosa-torre) 55%, var(--rosa-torre-oscuro) 100%);
+    border: 3px solid #fff;
+    box-shadow: 0 6px 10px rgba(255,120,180,.25);
+  }
+  .peldano::after{
+    content:"";
+    position:absolute; inset:6px;
+    border-radius:50%;
+    border: 2px dashed rgba(255,255,255,.6);
+  }
+
+  /* ---- Hello Kitty (gatita) ---- */
+  #gatita-wrap{
+    position:absolute; left:50%; z-index:20;
+    width: 96px; height: 96px; margin-left:-48px;
+    transition: bottom 1s cubic-bezier(.2,.9,.25,1.1);
+  }
+  #gatita-wrap.subiendo{ animation: brinco .5s ease; }
+  #gatita-wrap.bajando{ animation: caida .6s ease; }
+  @keyframes brinco{
+    0%{ transform: translateY(0) scale(1); }
+    40%{ transform: translateY(-22px) scale(1.08,.92); }
+    100%{ transform: translateY(0) scale(1); }
+  }
+  @keyframes caida{
+    0%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(14px) rotate(-8deg); }
+    100%{ transform: translateY(0) rotate(0deg); }
+  }
+  .jaula{
+    position:absolute; inset:-14px; z-index:2;
+    display:none; pointer-events:none;
+  }
+  .jaula.activa{ display:block; }
+  .jaula .barrote{
+    position:absolute; top:0; bottom:0; width:4px;
+    background: linear-gradient(180deg,#d8b46a,#b6893f);
+    border-radius:2px;
+  }
+
+  /* ---- Panel de conexión TikTok ---- */
+  #panel-conexion{
+    position:absolute; z-index:40; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    background: rgba(255,255,255,.92);
+    border: 4px solid var(--blanco);
+    outline: 3px solid #ffcfe4;
+    border-radius: 28px;
+    padding: 26px 24px;
+    width: min(88vw, 340px);
+    text-align:center;
+    box-shadow: 0 14px 40px rgba(255,120,180,.35);
+  }
+  #panel-conexion h1{
+    font-size:20px; margin: 4px 0 2px; color: var(--rojo-moño);
+  }
+  #panel-conexion p{ font-size:13px; opacity:.75; margin:0 0 14px; }
+  #panel-conexion input{
+    width:100%; padding: 12px 14px; border-radius: 16px;
+    border: 2px solid #ffd0e3; font-size:16px; text-align:center;
+    outline:none; margin-bottom:10px;
+  }
+  #panel-conexion input:focus{ border-color: var(--rojo-moño); }
+  #panel-conexion input.chico{ font-size:13px; padding:9px 12px; }
+  #panel-conexion .etiqueta{ font-size:11px; opacity:.6; text-align:left; margin:4px 2px; }
+  #panel-conexion .demo-nota{ font-size:11px; opacity:.65; margin-top:10px; line-height:1.5; }
+
+  #login-providers{ display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .btn-provider{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding: 11px 16px; border-radius:16px; border:2px solid #eee;
+    background:#fff; font-weight:700; font-size:14px; color:#444;
+    cursor:pointer;
+  }
+  .btn-provider .icono{
+    width:24px; height:24px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; flex-shrink:0;
+  }
+  .btn-provider.google .icono{ background:#fff; color:#000; border:2px solid #eee; }
+  .btn-provider.facebook .icono{ background:#1877f2; }
+  .btn-provider.tiktok{ border-color:#ffd0e3; }
+  .btn-provider.tiktok .icono{ background:linear-gradient(135deg,#ff4d78,#25f4ee); }
+  .btn-provider:active{ transform: translateY(1px); }
+  #aviso-provider{ font-size:11px; color:#c65; min-height:14px; margin-top:2px; }
+  #volver-login{
+    background:none; border:none; color:var(--rojo-moño); font-size:12px;
+    font-weight:700; cursor:pointer; margin-bottom:6px; padding:0;
+  }
+  #btn-conectar{
+    width:100%; padding: 13px; border:none; border-radius:18px;
+    background: linear-gradient(180deg, #ff8fbd, var(--rojo-moño));
+    color:#fff; font-weight:800; font-size:15px; letter-spacing:.3px;
+    box-shadow: 0 6px 0 #d63d63;
+    cursor:pointer;
+  }
+  #btn-conectar:active{ transform: translateY(3px); box-shadow: 0 3px 0 #d63d63; }
+  #estado-conexion{ font-size:12px; margin-top:10px; min-height:16px; color:#c65; }
+
+  #chip-estado{
+    position:absolute; top:14px; left:14px; z-index:30;
+    background: rgba(255,255,255,.85); border-radius:20px;
+    padding:6px 12px; font-size:12px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  #btn-musica{
+    position:absolute; top:14px; right:14px; z-index:30;
+    background: rgba(255,255,255,.85); border:none; border-radius:50%;
+    width:38px; height:38px; font-size:17px; cursor:pointer;
+    box-shadow: 0 4px 10px rgba(255,120,180,.2);
+  }
+  #chip-estado .punto{
+    width:8px; height:8px; border-radius:50%; background:#ccc;
+  }
+  #chip-estado.en-vivo .punto{ background:#ff3860; box-shadow:0 0 6px #ff3860; animation: pulso 1s infinite; }
+  @keyframes pulso{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+  /* ---- Notificación de regalo ---- */
+  #notif-regalo{
+    position:absolute; left:50%; top:76px; transform:translateX(-50%) translateY(-20px);
+    z-index:35; opacity:0; pointer-events:none;
+    background: #fff; border-radius:20px; padding:10px 18px;
+    box-shadow: 0 8px 20px rgba(255,120,180,.3);
+    font-size:14px; font-weight:700; white-space:nowrap;
+    transition: all .35s ease;
+    border: 2px solid #ffd0e3;
+  }
+  #notif-regalo.mostrar{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #notif-regalo .sube{ color: var(--verde-sube); }
+  #notif-regalo .baja{ color: var(--rojo-baja); }
+
+  /* ---- Confeti / corazones al subir, y efecto caída ---- */
+  .particula{
+    position:absolute; z-index:22; pointer-events:none;
+    font-size: 22px;
+  }
+  @keyframes subir-particula{
+    0%{ transform: translateY(0) scale(.6); opacity:1; }
+    100%{ transform: translateY(-180px) scale(1.2); opacity:0; }
+  }
+  @keyframes bajar-particula{
+    0%{ transform: translateY(0) scale(1); opacity:1; }
+    100%{ transform: translateY(120px) scale(.6); opacity:0; }
+  }
+
+  #meta-alcanzada{ display:none; }
+
+  #panel-simulador{
+    position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+    z-index:31; display:flex; gap:6px; flex-wrap:wrap; justify-content:center;
+    max-width: 94vw;
+  }
+  #panel-simulador button{
+    border:none; border-radius:14px; padding:8px 10px; font-size:11px;
+    background:#fff; border:2px solid #ffd0e3; color:var(--texto); font-weight:700;
+    box-shadow: 0 3px 0 #ffd0e3;
+  }
+  #panel-simulador button:active{ transform:translateY(2px); box-shadow:none; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="chip-estado"><span class="punto"></span><span id="chip-texto">Sin conectar</span></div>
+  <button id="btn-musica" title="Música">🔈</button>
+
+  <div id="marcador">
+    <div class="num"><span id="metros-actuales">0</span>m</div>
+    <div class="sub">Camino infinito ∞</div>
+  </div>
+
+  <div id="barra-wrap"><div id="barra-fill"></div></div>
+
+  <div id="torre-viewport">
+    <div id="torre"></div>
+    <div id="gatita-wrap">
+      <div class="jaula" id="jaula">
+        <div class="barrote" style="left:6px;"></div>
+        <div class="barrote" style="left:26px;"></div>
+        <div class="barrote" style="left:46px;"></div>
+        <div class="barrote" style="left:66px;"></div>
+        <div class="barrote" style="left:86px;"></div>
+        <div class="barrote" style="left:106px;"></div>
+      </div>
+      <svg id="gatita-svg" viewBox="0 0 100 100" width="96" height="96">
+        <!-- Cabeza -->
+        <ellipse cx="50" cy="52" rx="34" ry="30" fill="#ffffff" stroke="#e8b6c8" stroke-width="2"/>
+        <!-- Orejas -->
+        <path d="M20 34 L10 12 L34 26 Z" fill="#ffffff" stroke="#e8b6c8" stroke-width="2"/>
+        <path d="M80 34 L90 12 L66 26 Z" fill="#ffffff" stroke="#e8b6c8" stroke-width="2"/>
+        <!-- Moño -->
+        <g transform="translate(20,20)">
+          <polygon points="0,8 14,0 14,16" fill="#ff4d78"/>
+          <polygon points="28,8 14,0 14,16" fill="#ff4d78"/>
+          <circle cx="14" cy="8" r="4" fill="#ffd76a"/>
+        </g>
+        <!-- Ojos -->
+        <ellipse cx="36" cy="54" rx="2.6" ry="3.4" fill="#3a2a2a"/>
+        <ellipse cx="64" cy="54" rx="2.6" ry="3.4" fill="#3a2a2a"/>
+        <!-- Nariz -->
+        <ellipse cx="50" cy="60" rx="3.4" ry="2.6" fill="#ffd76a"/>
+        <!-- Bigotes -->
+        <line x1="6" y1="52" x2="30" y2="50" stroke="#d9a7bb" stroke-width="1.6"/>
+        <line x1="6" y1="60" x2="30" y2="60" stroke="#d9a7bb" stroke-width="1.6"/>
+        <line x1="70" y1="50" x2="94" y2="52" stroke="#d9a7bb" stroke-width="1.6"/>
+        <line x1="70" y1="60" x2="94" y2="60" stroke="#d9a7bb" stroke-width="1.6"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="notif-regalo"></div>
+
+  <div id="panel-conexion">
+    <div id="pantalla-proveedores">
+      <h1>🎀 Hello Kitty UP</h1>
+      <p>Inicia sesión para conectar tu LIVE y que tus regalos hagan subir a la gatita.</p>
+      <div id="login-providers">
+        <button class="btn-provider google" data-provider="google"><span class="icono">G</span> Iniciar sesión con Google</button>
+        <button class="btn-provider facebook" data-provider="facebook"><span class="icono">f</span> Iniciar sesión con Facebook</button>
+        <button class="btn-provider tiktok" data-provider="tiktok"><span class="icono">♪</span> Iniciar sesión con TikTok</button>
+      </div>
+      <div id="aviso-provider"></div>
+      <div class="demo-nota" style="margin-top:14px;">¿Solo quieres probar? <span id="link-demo" style="color:var(--rojo-moño);font-weight:700;cursor:pointer;text-decoration:underline;">Jugar en modo demo</span></div>
+    </div>
+
+    <div id="pantalla-tiktok" style="display:none;">
+      <button id="volver-login">← Volver</button>
+      <h1>♪ Conectar con TikTok</h1>
+      <p>Pon la cuenta que está en LIVE ahora mismo.</p>
+      <div class="etiqueta">Tu @usuario de TikTok</div>
+      <input id="input-usuario" type="text" placeholder="@tu_usuario_tiktok" autocomplete="off" />
+      <div class="etiqueta">URL de tu servidor (Render/Railway)</div>
+      <input id="input-servidor" class="chico" type="text" placeholder="https://tu-server.onrender.com" autocomplete="off" />
+      <button id="btn-conectar">CONECTAR A MI LIVE</button>
+      <div id="estado-conexion"></div>
+    </div>
+  </div>
+
+  <div id="panel-simulador">
+    <button data-regalo="Rose">🌹 Rosa</button>
+    <button data-regalo="Perfume">💐 Perfume</button>
+    <button data-regalo="Lion">🦁 León</button>
+    <button data-regalo="Universe">🌌 Universo</button>
+    <button data-regalo="Dona">🍩 Dona</button>
+    <button data-regalo="Galaxia">🌀 Galaxia</button>
+    <button data-regalo="Ionic Blast">🔒 Jaula</button>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+// =================== AUDIO: musiquita cute + sonidos de regalo ===================
+// Todo generado con Web Audio API (sin archivos externos, sin derechos de autor).
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function tono(freq, inicio, duracion, volumen, tipo){
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = tipo || 'sine';
+  osc.frequency.value = freq;
+  const t0 = ctx.currentTime + inicio;
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(volumen, t0 + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duracion);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + duracion + 0.05);
+}
+
+const NOTAS = { C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00, B5:987.77, C6:1046.50, D6:1174.66 };
+// melodía kawaii en loop, tipo cajita musical
+const MELODIA = [
+  ['C5',.3],['E5',.3],['G5',.3],['E5',.3],
+  ['F5',.3],['A5',.3],['G5',.55],
+  ['E5',.3],['D5',.3],['F5',.3],['D5',.3],
+  ['C5',.6],['G5',.3],['C6',.6]
+];
+
+let musicaActiva = false;
+let temporizadorMelodia = null;
+function reproducirMelodia(){
+  if(!musicaActiva) return;
+  let t = 0;
+  MELODIA.forEach(([nota,dur])=>{
+    tono(NOTAS[nota], t, dur*0.88, 0.045, 'triangle');
+    t += dur;
+  });
+  temporizadorMelodia = setTimeout(reproducirMelodia, t*1000 + 260);
+}
+
+function encenderMusica(){
+  const ctx = getAudioCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  if(musicaActiva) return;
+  musicaActiva = true;
+  document.getElementById('btn-musica').textContent = '🔊';
+  reproducirMelodia();
+}
+function apagarMusica(){
+  musicaActiva = false;
+  clearTimeout(temporizadorMelodia);
+  document.getElementById('btn-musica').textContent = '🔈';
+}
+document.getElementById('btn-musica').addEventListener('click', ()=>{
+  musicaActiva ? apagarMusica() : encenderMusica();
+});
+// primer toque en cualquier parte de la pantalla activa la música (los navegadores exigen un gesto del usuario)
+document.getElementById('stage').addEventListener('click', function primerToque(){
+  encenderMusica();
+  document.getElementById('stage').removeEventListener('click', primerToque);
+}, { once:true });
+
+function sonidoDeRegalo(accion){
+  const ctx = getAudioCtx();
+  if(ctx.state === 'suspended') ctx.resume();
+  if(accion === 'subir'){
+    tono(880, 0, 0.1, 0.12, 'sine');
+    tono(1174.66, 0.08, 0.16, 0.12, 'sine');
+  } else if(accion === 'bajar'){
+    tono(523.25, 0, 0.12, 0.1, 'sine');
+    tono(392.00, 0.09, 0.18, 0.1, 'sine');
+  } else if(accion === 'reiniciar'){
+    tono(659.25, 0, 0.1, 0.12, 'sawtooth');
+    tono(329.63, 0.1, 0.16, 0.12, 'sawtooth');
+    tono(164.81, 0.22, 0.3, 0.12, 'sawtooth');
+  } else if(accion === 'encerrar'){
+    tono(987.77, 0, 0.09, 0.1, 'square');
+    tono(1318.51, 0.09, 0.14, 0.1, 'square');
+  }
+}
+// =================== fin audio ===================
+
+let socket = null;
+let modoDemo = false;
+
+let metrosActuales = 0;
+const PIXELES_POR_METRO = 4; // qué tan rápido se ve subir la torre visualmente
+const METROS_POR_VUELTA = 100; // cada cuánto se llena la barrita lateral (decorativo, camino sigue infinito)
+
+const elMetros = document.getElementById('metros-actuales');
+const barraFill = document.getElementById('barra-fill');
+const torre = document.getElementById('torre');
+const gatitaWrap = document.getElementById('gatita-wrap');
+const notif = document.getElementById('notif-regalo');
+const jaula = document.getElementById('jaula');
+const chipEstado = document.getElementById('chip-estado');
+const chipTexto = document.getElementById('chip-texto');
+const panelConexion = document.getElementById('panel-conexion');
+
+// ---- construir peldaños en espiral (infinitos: se agregan más según se sube) ----
+let peldanosConstruidos = 0;
+function agregarPeldanos(cantidad){
+  for(let i=peldanosConstruidos; i<peldanosConstruidos+cantidad; i++){
+    const p = document.createElement('div');
+    p.className = 'peldano';
+    const angulo = i * 0.9;
+    const radio = 55;
+    const x = Math.sin(angulo) * radio;
+    p.style.bottom = (i * 46) + 'px';
+    p.style.marginLeft = (-110 + x) + 'px';
+    p.style.transform = `rotate(${Math.sin(angulo)*8}deg)`;
+    torre.appendChild(p);
+  }
+  peldanosConstruidos += cantidad;
+}
+agregarPeldanos(120);
+
+// ---- fondo decorativo ----
+const emojisFondo = ['☁️','☁️','💗','💕','🍓','🍰','⭐'];
+function crearFondo(){
+  const stage = document.getElementById('stage');
+  for(let i=0;i<18;i++){
+    const el = document.createElement('div');
+    el.className = 'bg-item';
+    el.textContent = emojisFondo[Math.floor(Math.random()*emojisFondo.length)];
+    el.style.left = Math.random()*94 + 'vw';
+    el.style.top = Math.random()*90 + 'vh';
+    el.style.fontSize = (20 + Math.random()*26) + 'px';
+    el.style.animationDuration = (5 + Math.random()*5) + 's';
+    el.style.animationDelay = (Math.random()*4) + 's';
+    stage.insertBefore(el, stage.firstChild.nextSibling);
+  }
+}
+crearFondo();
+
+function actualizarPosicion(animarClase){
+  elMetros.textContent = Math.round(metrosActuales);
+
+  // barrita lateral: representa el progreso dentro de la "vuelta" actual de 100m (decorativo, el camino sigue infinito)
+  const progresoVuelta = (metrosActuales % METROS_POR_VUELTA) / METROS_POR_VUELTA;
+  barraFill.style.height = (progresoVuelta*100) + '%';
+
+  const offsetY = metrosActuales * PIXELES_POR_METRO;
+  torre.style.transform = `translateY(${offsetY}px)`;
+  gatitaWrap.style.bottom = (140) + 'px';
+
+  if(animarClase){
+    gatitaWrap.classList.remove('subiendo','bajando');
+    void gatitaWrap.offsetWidth;
+    gatitaWrap.classList.add(animarClase);
+  }
+
+  // torre infinita: si nos acercamos al final de los peldaños construidos, agregamos más
+  if(offsetY > (peldanosConstruidos * 46) - 1200){
+    agregarPeldanos(120);
+  }
+}
+
+function mostrarParticulas(tipo){
+  const contenedor = gatitaWrap;
+  const cuantas = tipo==='sube' ? 6 : 4;
+  for(let i=0;i<cuantas;i++){
+    const p = document.createElement('div');
+    p.className = 'particula';
+    p.textContent = tipo==='sube' ? '💗' : '💦';
+    p.style.left = (30 + Math.random()*40) + 'px';
+    p.style.bottom = '20px';
+    p.style.animation = (tipo==='sube' ? 'subir-particula' : 'bajar-particula') + ' 1s ease forwards';
+    contenedor.appendChild(p);
+    setTimeout(()=> p.remove(), 1000);
+  }
+}
+
+function mostrarNotificacion(usuario, regaloTxt, metros, tipo){
+  let etiqueta;
+  if(tipo==='sube') etiqueta = `<span class="sube">+${metros}m</span>`;
+  else if(tipo==='baja') etique
