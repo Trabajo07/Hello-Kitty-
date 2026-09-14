@@ -1,0 +1,17 @@
+{
+  "meta_metros": null,
+  "regalos": {
+    "Rose": { "accion": "subir", "metros": 2 },
+    "Perfume": { "accion": "subir", "metros": 25 },
+    "GG Sock": { "accion": "subir", "metros": 5 },
+    "Heart": { "accion": "subir", "metros": 12 },
+    "Coco": { "accion": "subir", "metros": 15 },
+    "TikTok": { "accion": "subir", "metros": 100 },
+    "Lion": { "accion": "subir", "metros": 300 },
+    "Universe": { "accion": "subir", "metros": 500 },
+    "Donut": { "accion": "bajar", "metros": 10 },
+    "Galaxy": { "accion": "reiniciar" },
+    "Ionic Blast": { "accion": "encerrar", "segundos": 5, "metros": 0 }
+  },
+  "default_subir_por_moneda": 0.4
+}
